@@ -1,191 +1,171 @@
-// CONSTANTS for WORLD behavior
-var WORLD = {
-    gravity: new THREE.Vector3(0, -9.8, -3), // slightly positive in z to simulate downhill
-    timeScalar: 1,
-    playerStartingSize: 2,
-    down: new THREE.Vector3(0, -1, 0),
-    up: new THREE.Vector3(0, 1, 0),
-    left: new THREE.Vector3(1, 0, 0),
-    right: new THREE.Vector3(0, 1, 0),
-    bounceDamp: 0.6,
-    rotDamp: 0.1,
-    planeSize: 10000,
-    playerMass: 500,
-}
-
-// Functions used for world... probably could better define API
-
-WORLD.makeMove = function(obj) {
-    obj.velocity = new THREE.Vector3(0, 0, 0)
-    obj.rotationAdjuster = new THREE.Vector3(0, 0, 0);
-    obj.movable = true;
-}
-
-WORLD.addFloor = function(scene, camera, world) {
-    var geo = new THREE.PlaneBufferGeometry(WORLD.planeSize, WORLD.planeSize, 1, 1)
-    var material = new THREE.MeshPhongMaterial( {color: 0x1144ee })
-    var plane = new THREE.Mesh(geo, material);
-    var floor = new THREE.Plane()
-    scene.add(plane);
-
-    plane.rotation.x = - Math.PI/2.0 // Get it with normal facing 'up'
-    plane.position.y = -1
-    world.floor = plane
-}
-
-WORLD.addSun = function(scene, camera) {
-    var lights = []
-    var dLight1 = new THREE.DirectionalLight(0xffffff, 0.8)
-    dLight1.position.set(0,1,0) // one above
-    lights.push(dLight1);
-
-    var dLight2 = new THREE.DirectionalLight(0xffffff, 0.8)
-    dLight2.position.set(0,1,1) // one above behind camera
-    scene.add(dLight2)
-    lights.push(dLight2)
-
-    var spotLight = new THREE.PointLight(0xffffff, 1, 1000);
-    spotLight.position.set(0, 20, -1000);
-    scene.add(spotLight);
-    lights.push(spotLight);
-
-    return lights;
-}
 
 
-WORLD.addBall = function(scene, camera) {
-    var geo = new THREE.SphereGeometry(WORLD.playerStartingSize, 50, 50)
-    
-    var material = new THREE.MeshPhongMaterial( {
-        color: 0x00ff00 // green
-    })
-    var sphere = new THREE.Mesh(geo, material);
-    scene.add(sphere);
-    sphere.position.y = 5
-    WORLD.makeMove(sphere);
-    sphere.mass = WORLD.playerMass;
+var World = function(spec) {
 
-    var g2 = new THREE.BoxGeometry(2, 2, 2);
-    var cube = new THREE.Mesh(g2, material);
-    scene.add(cube);
-    cube.position.y = 2;
-    sphere.add(cube);
+    var that = {}
 
-    return sphere;
-}
+/***************** PRIVATE METHODS **************/
 
-WORLD.pushBall = function(dir) {
-    var p = this.world.player;
-    if (dir === 'left') {
-        p.velocity.x = Math.max(-.5, p.velocity.x - 0.05 + (Math.random() - 1.0)*.0001);
-    }
-    else {
-        p.velocity.x = Math.min(.5, p.velocity.x + 0.05 + (Math.random() - 1.0)*.0001);
-    }
-}
+    that._initFloor = function(scene, camera) {
 
-WORLD.keyboard = function() {
-    WORLD.world.adjustCam = 0;
-    document.addEventListener('keydown', function(e) {
-        if (e.keyCode === 37) { 
-            WORLD.world.keyPressed = true;
-            WORLD.pushBall('left')
-            WORLD.world.adjustCam = Math.min(1, WORLD.world.adjustCam + .01);
-        }
-        else if (e.keyCode === 39) {
-            WORLD.world.keyPressed = true;
-            WORLD.pushBall('right')
-            WORLD.world.adjustCam = Math.max(-1, WORLD.world.adjustCam - .01);
-        }
-    })
-    document.addEventListener('keyup', function(e) {
-        if (e.keyCode === 37 || e.keyCode === 39) { 
-            WORLD.world.keyPressed = false;
-        }
-    })
-}
+        var geo = new THREE.PlaneBufferGeometry(ENV.planeSize, ENV.planeSize, 1, 1)
+        var material = new THREE.MeshPhongMaterial( {color: ENV.planeColor })
+        var floor = new THREE.Mesh(geo, material);
+        scene.add(floor);
 
-WORLD.instantiateWorld = function(scene, camera) {
-    var world = {}
-    WORLD.world = world;
-    world.objects = []
-    world.math = [] // keeps doubled of meshes for collision detection
-
-    // Create Environment
-
-    WORLD.addFloor(scene, camera, world);
-    world.sunlights = WORLD.addSun(scene, camera);
-
-    // Create physical ball
-
-    world.player = WORLD.addBall(scene, camera);
-    world.objects.push(world.player);
-
-    // Define forces
-
-    world.forces = []
-    world.forces.push(WORLD.gravity);
-
-    // Capture keyboard
-
-    this.keyboard();
-
-    // Helper functions
-
-    world.getMovableObjects = function() {
-        var mo = []
-        for (var i = 0; i < this.objects.length; i++) {
-            if (this.objects[i].movable) mo.push(this.objects[i])
-        }
-        return mo;
+        floor.rotation.x = - Math.PI/2.0 // Get it with normal facing 'up'
+        that._floor = floor
     }
 
-    // Do physics updates
+    that._initLights = function(scene, camera) {
 
-    world.updateStep = function() {
+        that._lights = []
+
+        var dLight1 = new THREE.DirectionalLight(ENV.white, 1)
+        dLight1.position.set(0,1,0) // one above
+        that._lights.push(dLight1);
+
+        var dLight2 = new THREE.DirectionalLight(ENV.white, 1)
+        dLight2.position.set(0,1,5) // one above behind camera
+        scene.add(dLight2)
+        that._lights.push(dLight2)
+
+        var spotLight = new THREE.PointLight(ENV.white, 1, 1000);
+        spotLight.position.set(0, 20, -100);
+        scene.add(spotLight);
+        that._lights.push(spotLight);
+    }
+
+    // Tball texture -> http://tpreclik.dd-dns.de/codeblog/wp-content/uploads/2007/02/tennisball-texture.jpg
+    // Wood texture ->http://libnoise.sourceforge.net/examples/textures/images/wood/sphere.jpg
+    that._initPlayer = function(scene, camera) {
+        var geo = new THREE.SphereGeometry(ENV.playerRadius, ENV.playerFidelity, ENV.playerFidelity)
+        
+        var texture = new THREE.ImageUtils.loadTexture('images/wood.jpg', THREE.SphericalReflectionMapping)
+
+        var material = new THREE.MeshPhongMaterial( {
+            map: texture
+        })
+
+        var sphere = new THREE.Mesh(geo, material);
+        scene.add(sphere);
+        sphere.position.y = ENV.playerStartingHeight
+        sphere.mass = ENV.playerMass;
+
+        // Bugfix: floating point error when raycasting to south pole of sphere.
+        sphere.rotation.x = - Math.PI/2.0 
+
+        eObj(sphere);
+        that.player = sphere;
+    }
+
+    that._initBox = function(scene, camera) {
+        var boxGeo = new THREE.BoxGeometry(2, 2, 2);
+        var cube = new THREE.Mesh(boxGeo, material);
+        scene.add(cube);
+        cube.position.y = 2;
+        cube.position.z = -100;
+        eObj(cube);
+        that.objects.push(cube);
+    }
+
+    that._initKeyboard = function() {
+        that.adjustCam = 0.0;
+        document.addEventListener('keydown', function(e) {
+            if (e.keyCode === ENV.leftKey) { 
+                that.keyPressed = true;
+                that._pushBall('left')
+                that.adjustCam = Math.min(1, that.adjustCam + ENV.cameraSpeed);
+            }
+            else if (e.keyCode === ENV.rightKey) {
+                that.keyPressed = true;
+                that._pushBall('right')
+                that.adjustCam = Math.max(-1, that.adjustCam - ENV.cameraSpeed);
+            }
+        })
+        document.addEventListener('keyup', function(e) {
+            if (e.keyCode === ENV.leftKey || e.keyCode === ENV.rightKey) { 
+                that.keyPressed = false;
+            }
+        })
+    }
+
+    that._pushBall = function(dir) {
+        var p = that.player;
+        if (dir === 'left') {
+            p.velocity.x = Math.max(-2.5, p.velocity.x - 0.3 + (Math.random() - 1.0)*.01);
+        }
+        else {
+            p.velocity.x = Math.min(2.5, p.velocity.x + 0.3 + (Math.random() - 1.0)*.01);
+        }
+    }
+
+    // Fix camera slowly when key released
+    that._adjustCamera = function() {
+        if (!that.keyPressed) {
+            if (that.adjustCam < 0.0) {
+                that.adjustCam += ENV.cameraSpeed
+            }
+            else that.adjustCam -= ENV.cameraSpeed
+        }
+    }
+
+/***************** END PRIVATE METHODS  **************/
+
+
+
+
+/***************** PUBLIC METHODS       **************/
+
+
+    // Do physics updates, rotation, etc.
+    that.updateStep = function() {
+
 
         // Move objects and update velocities
-        var objs = this.getMovableObjects()
 
-        for(var i = 0; i < objs.length; i++) {
-            var o = objs[i]
-            o.position.x += o.velocity.x
-            o.position.y += o.velocity.y
-            o.position.z += o.velocity.z
-            for(var j = 0; j < this.forces.length; j++) {
-                var f = this.forces[j];
-                o.velocity.x += f.x * WORLD.timeScalar / o.mass;
-                o.velocity.y += f.y * WORLD.timeScalar / o.mass;
-                o.velocity.z += f.z * WORLD.timeScalar / o.mass;
-            }
+        for(var i = 0; i < that.objects; i++) {
+            that.objects[i].euler();
         }
 
-        // Detect collisions with floor to simulate rolling
-        var rc = new THREE.Raycaster(this.player.position, WORLD.down)
-        var is = rc.intersectObject(this.floor, false);
-        for (var i = 0; i < is.length; i++) {
-            if (is[i].distance < WORLD.playerStartingSize) {
-                o.velocity.reflect(WORLD.down);
+        // Move player
+        var p = that.player;
+        p.euler();
 
-                // rotate
-                o.rotation.x += o.velocity.z*o.velocity.y;
-                o.rotation.z += o.velocity.x*o.velocity.y;
+        // Going to try something a little different. If any vertex is negative y...
+        for (var i = 0; i < p.geometry.vertices.length; i++) {
+            var v = p.geometry.vertices[i].clone();
+            v.applyMatrix4(p.matrixWorld);
+            if (v.y < 0.0) {
+                p.velocity.reflect(ENV.down);
+
+                // Rotate
                 
-                if (o.velocity.y < 0.1) o.velocity.y = 0;
-                o.velocity.y *= WORLD.bounceDamp;
+                p.rotation.x += p.velocity.z * ENV.rotDamp;
+                p.rotation.z += p.velocity.x * ENV.rotDamp;
+                
+                // Prevent thrashing
+                if (p.velocity.y < 0.1) p.velocity.y = 0;
+                else p.velocity.y *= ENV.bounceDamp;
+                break;
             }
         }
 
-        // Fix camera slowly
-        if (!world.keyPressed) {
-            if (world.adjustCam < 0.0) {
-                world.adjustCam += 0.02
-            }
-            else world.adjustCam -= 0.02
-        }
-
+        that._adjustCamera()
     }
 
 
-    return world
+    that.init = function(scene, camera) {
+        that.objects = []
+
+        // Create Environment
+        that._initFloor(scene, camera);
+        that._initLights(scene, camera);
+        that._initPlayer(scene, camera);
+        that._initKeyboard(scene, camera);
+        // that._initBox
+
+    }
+
+    return that;
 }
