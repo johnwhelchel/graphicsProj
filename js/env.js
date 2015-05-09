@@ -11,23 +11,23 @@ var ENV = {
     // Camera
     cameraSpeed: 0.0,
 
-    forces: [
-        // Gravity
-        new THREE.Vector3(0, -9.8, -3), // slightly negative in z to simulate downhill
-    ],
+    gravity: new THREE.Vector3(0, -24/2.0, -7/2.0), //  negative in z to simulate downhill
+
 
     // Adjust to change the way time behaves
-    timeScalar: .01,
+    timeScalar: .05,
 
     // Player variables
     playerRadius: 2,
     playerMass: 500,
     playerFidelity: 20,
-    playerStartingHeight: 15,
+    playerStartingHeight: 5,
+    playerPushForce: 4,
 
     // Physics damping
     bounceDamp: 0.6,
-    rotDamp: 0.5,
+    rotDamp: 0.1,
+    nonPlayerMass: 600,
 
     // Floor variables
     planeSize: 10000,
