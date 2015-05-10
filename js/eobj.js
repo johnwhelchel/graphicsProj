@@ -7,6 +7,8 @@ var eObj = function(mesh) {
 
     // THIS ASSUMES ONLY GRAVITY and SPHERES
     mesh.euler = function() {
+
+
         mesh.position.x += mesh.velocity.x
         mesh.position.y += mesh.velocity.y
         mesh.position.z += mesh.velocity.z
@@ -34,6 +36,9 @@ var eObj = function(mesh) {
         mesh.angVelocity.y += torque.y * ENV.timeScalar / mesh.mass;
         mesh.angVelocity.z += torque.z * ENV.timeScalar / mesh.mass;
 
+        if (mesh.position.y < ENV.playerRadius) {
+            mesh.position.y = ENV.playerRadius
+        }
 
         // Check to see if beneath plane:
 
@@ -49,6 +54,21 @@ var eObj = function(mesh) {
                 break;
             }
         }
+
+        // Check children
+
+        for (var i = 0; i < mesh.children.length; i++) {
+            var c = mesh.children[i];
+            for (var j = 0; j < c.geometry.vertices.length; j++) {
+                var v = c.geometry.vertices[j].clone();
+                v.applyMatrix4(c.matrixWorld);
+                if (v.y < 0.0) {
+                    mesh.position.y += c.geometry.parameters.radius;
+                    mesh.velocity.reflect(c.position.clone().applyMatrix4(mesh.matrixWorld).sub(mesh.position.clone()).normalize()).multiplyScalar(ENV.physicsDamp);
+                    break;
+                }
+            }
+        };
     }
 
     return mesh;

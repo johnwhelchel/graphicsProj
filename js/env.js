@@ -10,6 +10,7 @@ var ENV = {
 
     // Camera
     cameraSpeed: 0.0,
+    cameraBehind: true,
 
     gravity: new THREE.Vector3(0, -24/2.0, -7/2.0), //  negative in z to simulate downhill
 
@@ -27,6 +28,7 @@ var ENV = {
     // Physics damping
     bounceDamp: 0.6,
     rotDamp: 0.1,
+    physicsDamp: 0.1,
     nonPlayerMass: 600,
 
     // Floor variables

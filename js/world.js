@@ -60,7 +60,7 @@ var World = function(spec) {
     }
 
     that._initOtherSphere = function() {
-        var sphereGeo = new THREE.SphereGeometry(2.1, 30, 30);
+        var sphereGeo = new THREE.SphereGeometry(.3, 30, 30);
 
         var texture = new THREE.ImageUtils.loadTexture('images/wood.jpg', THREE.SphericalReflectionMapping)
 
@@ -74,6 +74,10 @@ var World = function(spec) {
         oSphere.position.z = -5;
         eObj(oSphere);
         that.objects.push(oSphere);
+    }
+
+    that._initGroupsOfSpheres = function() {
+        that._initOtherSphere;
     }
 
     that._initKeyboard = function() {
@@ -110,24 +114,10 @@ var World = function(spec) {
 
             // Why cast a ray? just check distance vs. sum of radii
             if (dir.length() < r + o.geometry.parameters.radius) {
-                //p.children.push(o); NECESSARY?
+              
                 THREE.SceneUtils.attach(o, that._scene, p);
                 that.objects.splice(i, 1);
             }
-
-
-            // var rc = new THREE.Raycaster(p.position, dir.normalize(), 0, ENV.planeSize);
-            // var intersects = rc.intersectObject(o);
-            // if (intersects.length > 0) {
-            //     for (var j = 0; j < intersects.length; j++) {
-            //         console.log(intersects[j].distance)
-            //         if (intersects[j].distance < ENV.playerRadius) {
-            //             //p.children.push(o); NECESSARY?
-            //             THREE.SceneUtils.attach(o, that._scene, p);
-            //             that.objects.splice(i, 1);
-            //         }
-            //     }
-            // }
         }
     }
 
@@ -181,6 +171,7 @@ var World = function(spec) {
         that._initPlayer();
         that._initKeyboard();
         that._initOtherSphere();
+        //that._initGroupsOfSpheres();
 
     }
 
