@@ -44,7 +44,7 @@ var eObj = function(mesh) {
         mesh.angVelocity.y += torque.y * ENV.timeScalar / mesh.mass;
         mesh.angVelocity.z += torque.z * ENV.timeScalar / mesh.mass;
 
-        if (mesh.position.y < mesh.geometry.parameters.radius ) {
+        if (mesh.position.y < mesh.geometry.parameters.radius) {
             mesh.position.y = mesh.geometry.parameters.radius
             if (!mesh.isPlayer) mesh.velocity.y = - mesh.velocity.y
         }

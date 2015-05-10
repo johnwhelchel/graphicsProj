@@ -4,8 +4,8 @@ var setup = function() {
     var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
 
     if (ENV.cameraBehind) {
-        camera.position.z = -5 // pull back
-        camera.position.y = 8 // put up to make it look like you're looking downhill.
+        camera.position.z = 10 // pull back
+        camera.position.y = 6 // put up to make it look like you're looking downhill.
     }
     else {
         camera.position.y = 2;
@@ -26,10 +26,15 @@ var setup = function() {
         world.updateStep();
         var newCamPos = world.player.position.clone();
         if (ENV.cameraBehind) {
-            newCamPos.z += 10;
-            camera.position.x = newCamPos.x + world.adjustCam;
-            
-            camera.position.z = newCamPos.z;
+            camera.position.y = newCamPos.y + 3;
+
+            camera.position.x = newCamPos.x + world.adjustCam.x;
+            camera.up.x = world.adjustCam.x*-0.2;
+
+            camera.position.z = newCamPos.z + 10 + world.adjustCam.z;
+
+            camera.updateProjectionMatrix();
+
         }
         else {
             camera.position.z = newCamPos.z

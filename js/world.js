@@ -32,9 +32,9 @@ var World = function(spec) {
         //that._lights.push(dLight2)
 
         var spotLight;
-        for (var i = 0; i < 3; i++) {
+        for (var i = 0; i < 4; i++) {
             spotLight = new THREE.SpotLight(ENV.white, 1, 10000);
-            spotLight.position.set(100*(i%2-.5), 10, -100*i);
+            spotLight.position.set(100*(i%2-.5), 10, -300*i);
             spotLight.castShadow = true;
             spotLight.shadowDarkness = 0.5;
             that._scene.add(spotLight);
@@ -111,27 +111,27 @@ var World = function(spec) {
     }
 
     that._initKeyboard = function() {
-        that.adjustCam = 0.0;
+        that.adjustCam = new THREE.Vector3(0.0, 0.0, 0.0);
         document.addEventListener('keydown', function(e) {
             if (e.keyCode === ENV.leftKey) { 
-                that.keyPressed = true;
                 that.player.pushLeft = true;
                 that.player.pushRight = false;
-                that.adjustCam = Math.min(1, that.adjustCam + ENV.cameraSpeed);
+                that.adjustCam.x = Math.min(1, that.adjustCam.x + ENV.cameraSpeed);
             }
             else if (e.keyCode === ENV.rightKey) {
-                that.keyPressed = true;
                 that.player.pushLeft = false;
                 that.player.pushRight = true;
-                that.adjustCam = Math.max(-1, that.adjustCam - ENV.cameraSpeed);
+                that.adjustCam.x = Math.max(-1, that.adjustCam.x - ENV.cameraSpeed);
             }
             else if (e.keyCode === ENV.upKey) {
                 that.player.pushUp = true;
                 that.player.pushDown = false;
+                that.adjustCam.z = Math.min(1, that.adjustCam.z + ENV.cameraSpeed);
             }
             else if (e.keyCode === ENV.downKey) {
                 that.player.pushUp = false;
                 that.player.pushDown = true;
+                that.adjustCam.z = Math.min(1, that.adjustCam.z - ENV.cameraSpeed);
             }
         })
         document.addEventListener('keyup', function(e) {
@@ -160,6 +160,7 @@ var World = function(spec) {
             // Why cast a ray? just check distance vs. sum of radii
             if (dir.length() < r + o.geometry.parameters.radius) {
                 THREE.SceneUtils.attach(o, that._scene, p);
+                o.castShadow = true;
                 that.player.mass += ENV.captureMass;
                 that.objects.splice(i, 1);
             }
@@ -168,11 +169,17 @@ var World = function(spec) {
 
     // Fix camera slowly when key released
     that._adjustCamera = function() {
-        if (!that.keyPressed) {
-            if (that.adjustCam < 0.0) {
-                that.adjustCam += ENV.cameraSpeed
-            }
-            else that.adjustCam -= ENV.cameraSpeed
+        if (!that.player.pushLeft && that.adjustCam.x > 0.0) {
+            that.adjustCam.x -= ENV.cameraSpeed
+        }
+        if (!that.player.pushRight && that.adjustCam.x < 0.0) {
+            that.adjustCam.x += ENV.cameraSpeed
+        }
+        if (!that.player.pushUp && that.adjustCam.z > 0.0) {
+            that.adjustCam.z -= ENV.cameraSpeed
+        }
+        if (!that.player.pushDown && that.adjustCam.z < 0.0) {
+            that.adjustCam.z += ENV.cameraSpeed
         }
     }
 
@@ -220,7 +227,7 @@ var World = function(spec) {
         that._initPlayer();
         that._initKeyboard();
         //that._initOtherSphere();
-        that._initGroupsOfSpheres(0);
+        that._initGroupsOfSpheres(10);
         that._initTree();
 
     }

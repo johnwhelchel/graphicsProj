@@ -5,17 +5,20 @@
     // Seems to work! CHECK
 
 // Add keyboard controls for front and back
+    // CHECK
 
-// Get rid of camera movement. Dumb.
+// Get rid of camera movement. 
+    // FIXED
 
 // Make it possible to pick up via children, i.e. nesting.
 // Have a lot more
 // Make it pretty
+// have it fall off the edge
 
 var ENV = {
 
     // Camera
-    cameraSpeed: 0.0,
+    cameraSpeed: 0.02,
     cameraBehind: true,
 
     gravity: new THREE.Vector3(0, -24/2.0, -7/2.0), //  negative in z to simulate downhill
@@ -39,11 +42,11 @@ var ENV = {
 
     nonPlayerMass: 500,
     nonPlayerRadius: .2,
-    nonPlayerCastShadow: true,
+    nonPlayerCastShadow: false,
     captureMass: 10,
 
     // Floor variables
-    planeSize: 10000,
+    planeSize: 2000,
     planeColor: 0x0000ee,
 
     // Useful Constants
@@ -51,6 +54,7 @@ var ENV = {
     up: new THREE.Vector3(0, 1, 0),
     left: new THREE.Vector3(1, 0, 0),
     right: new THREE.Vector3(0, 1, 0),
+    origin: new THREE.Vector3(0, 0, 0),
 
     leftKey: 37,
     rightKey: 39,
