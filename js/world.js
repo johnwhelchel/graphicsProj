@@ -13,6 +13,7 @@ var World = function(spec) {
         var floor = new THREE.Mesh(geo, material);
         that._scene.add(floor);
 
+        floor.receiveShadow = true;
         floor.rotation.x = - Math.PI/2.0 // Get it with normal facing 'up'
         that._floor = floor
     }
@@ -23,17 +24,23 @@ var World = function(spec) {
 
         var dLight1 = new THREE.DirectionalLight(ENV.white, 1)
         dLight1.position.set(0,1,0) // one above
-        that._lights.push(dLight1);
+        //that._lights.push(dLight1);
 
         var dLight2 = new THREE.DirectionalLight(ENV.white, 1)
         dLight2.position.set(0,1,5) // one above behind camera
         that._scene.add(dLight2)
-        that._lights.push(dLight2)
+        //that._lights.push(dLight2)
 
-        var spotLight = new THREE.PointLight(ENV.white, 1, 1000);
-        spotLight.position.set(0, 20, -100);
-        that._scene.add(spotLight);
-        that._lights.push(spotLight);
+        var spotLight;
+        for (var i = 0; i < 3; i++) {
+            spotLight = new THREE.SpotLight(ENV.white, 1, 10000);
+            spotLight.position.set(100*(i%2-.5), 10, -100*i);
+            spotLight.castShadow = true;
+            spotLight.shadowDarkness = 0.5;
+            that._scene.add(spotLight);
+            that._lights.push(spotLight);
+        }
+        console.log(that._lights.length);
     }
 
     // Tball texture -> http://tpreclik.dd-dns.de/codeblog/wp-content/uploads/2007/02/tennisball-texture.jpg
@@ -50,34 +57,57 @@ var World = function(spec) {
         var sphere = new THREE.Mesh(geo, material);
         that._scene.add(sphere);
         sphere.position.y = ENV.playerStartingHeight
+        sphere.position.z = 3
 
-        // Bugfix: floating point error when raycasting to south pole of sphere.
-        sphere.rotation.x = - Math.PI/2.0 
-
+        sphere.castShadow = ENV.playerCastShadow
         sphere.isPlayer = true;
         eObj(sphere);
         that.player = sphere;
     }
 
-    that._initOtherSphere = function() {
-        var sphereGeo = new THREE.SphereGeometry(.3, 30, 30);
-
-        var texture = new THREE.ImageUtils.loadTexture('images/wood.jpg', THREE.SphericalReflectionMapping)
+    that._initOtherSphere = function(loc, vel) {
+        loc = loc || new THREE.Vector3(0, 2, -5);
+        vel = vel || new THREE.Vector3(0, 0, 0);
+        var sphereGeo = new THREE.SphereGeometry(ENV.nonPlayerRadius, 30, 30);
 
         var material = new THREE.MeshPhongMaterial( {
-            map: texture
+            color: 0xff0000
         })
 
         var oSphere = new THREE.Mesh(sphereGeo, material);
         that._scene.add(oSphere);
-        oSphere.position.y = 2;
-        oSphere.position.z = -5;
+        oSphere.position.x = loc.x;
+        oSphere.position.y = loc.y;
+        oSphere.position.z = loc.z;
+
+        oSphere.velocity = new THREE.Vector3(vel.x, vel.y, vel.z);
+        oSphere.castShadow = ENV.nonPlayerCastShadow;
+
         eObj(oSphere);
         that.objects.push(oSphere);
     }
 
-    that._initGroupsOfSpheres = function() {
-        that._initOtherSphere;
+    that._initGroupsOfSpheres = function(count) {
+
+        for(var i = 0; i < count; i++) {
+            var loc = new THREE.Vector3((Math.random()-0.5)*20, Math.random()*2, Math.random()*-5 - 3)
+            var vel = new THREE.Vector3(Math.random()*-.02, 0, Math.random()*-.002);
+            that._initOtherSphere(loc, vel);
+        }
+    }
+
+    that._initTree = function() {
+        var boxGeo = new THREE.BoxGeometry(2, 10, 2);
+        var material = new THREE.MeshPhongMaterial( {
+            color: 0x00ff00,
+        })
+        var box = new THREE.Mesh(boxGeo, material);
+        that._scene.add(box);
+        box.position.x = -2;
+        box.position.y = 1;
+        box.position.z = -100;
+        box.euler = function () {};
+        that.objects.push(box);
     }
 
     that._initKeyboard = function() {
@@ -95,12 +125,27 @@ var World = function(spec) {
                 that.player.pushRight = true;
                 that.adjustCam = Math.max(-1, that.adjustCam - ENV.cameraSpeed);
             }
+            else if (e.keyCode === ENV.upKey) {
+                that.player.pushUp = true;
+                that.player.pushDown = false;
+            }
+            else if (e.keyCode === ENV.downKey) {
+                that.player.pushUp = false;
+                that.player.pushDown = true;
+            }
         })
         document.addEventListener('keyup', function(e) {
-            if (e.keyCode === ENV.leftKey || e.keyCode === ENV.rightKey) { 
-                that.keyPressed = false;
-                that.player.pushRight = false;
+            if (e.keyCode === ENV.leftKey) {
                 that.player.pushLeft = false;
+            }
+            else if (e.keyCode === ENV.rightKey) {
+                that.player.pushRight = false;
+            }
+            else if (e.keyCode === ENV.upKey) {
+                that.player.pushUp = false;
+            }
+            else if (e.keyCode === ENV.downKey) {
+                that.player.pushDown = false;
             }
         })
     }
@@ -114,8 +159,8 @@ var World = function(spec) {
 
             // Why cast a ray? just check distance vs. sum of radii
             if (dir.length() < r + o.geometry.parameters.radius) {
-              
                 THREE.SceneUtils.attach(o, that._scene, p);
+                that.player.mass += ENV.captureMass;
                 that.objects.splice(i, 1);
             }
         }
@@ -146,17 +191,21 @@ var World = function(spec) {
         // Move objects and update velocities
 
         for(var i = 0; i < that.objects.length; i++) {
-            that.objects[i].euler();
+            that.objects[i].euler(that);
         }
 
         // Move player
         var p = that.player;
-        p.euler();
+        p.euler(that);
 
 
         that._catchOthers(p);
 
         that._adjustCamera()
+
+        for(var i = 0; i < that._lights.length; i++) {
+            that._lights[i].target = that.player
+        }
     }
 
 
@@ -170,8 +219,9 @@ var World = function(spec) {
         that._initLights();
         that._initPlayer();
         that._initKeyboard();
-        that._initOtherSphere();
-        //that._initGroupsOfSpheres();
+        //that._initOtherSphere();
+        that._initGroupsOfSpheres(0);
+        that._initTree();
 
     }
 

@@ -14,6 +14,7 @@ var setup = function() {
     }
     var renderer = new THREE.WebGLRenderer()
     renderer.setSize( window.innerWidth, window.innerHeight)
+    renderer.shadowMapEnabled = true;
 
     document.body.appendChild(renderer.domElement)
 
@@ -29,12 +30,11 @@ var setup = function() {
             camera.position.x = newCamPos.x + world.adjustCam;
             
             camera.position.z = newCamPos.z;
-            camera.lookAt(world.player.position);
         }
         else {
             camera.position.z = newCamPos.z
-            camera.lookAt(world.player.position);
         }
+        camera.lookAt(world.player.position);
         renderer.render( scene, camera );
     }
 

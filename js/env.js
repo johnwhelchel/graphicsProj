@@ -1,10 +1,16 @@
 // CONSTANTS for WORLD behavior
 
 // TODO
-// Make rotation better math
-// Do raytracing from plane, not other way around
-    // To do this, need to have sphere math, copy the position adjustments, project, then do collision detection.
-// Get it picking up objects
+// Make other objects interact with one another
+    // Seems to work! CHECK
+
+// Add keyboard controls for front and back
+
+// Get rid of camera movement. Dumb.
+
+// Make it possible to pick up via children, i.e. nesting.
+// Have a lot more
+// Make it pretty
 
 var ENV = {
 
@@ -24,12 +30,17 @@ var ENV = {
     playerFidelity: 20,
     playerStartingHeight: 5,
     playerPushForce: 4,
+    playerCastShadow: true,
 
     // Physics damping
     bounceDamp: 0.6,
     rotDamp: 0.1,
     physicsDamp: 0.1,
-    nonPlayerMass: 600,
+
+    nonPlayerMass: 500,
+    nonPlayerRadius: .2,
+    nonPlayerCastShadow: true,
+    captureMass: 10,
 
     // Floor variables
     planeSize: 10000,
@@ -43,6 +54,8 @@ var ENV = {
 
     leftKey: 37,
     rightKey: 39,
+    upKey: 38,
+    downKey: 40,
 
     white: 0xffffff,
     defaultMass: 100,
