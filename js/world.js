@@ -22,25 +22,37 @@ var World = function(spec) {
 
         that._lights = []
 
-        var dLight1 = new THREE.DirectionalLight(ENV.white, 1)
-        dLight1.position.set(0,1,0) // one above
-        //that._lights.push(dLight1);
+        // Sunlight
+        var dLight1 = new THREE.DirectionalLight(ENV.sunColor, 3)
+        dLight1.position.set(-9000,1000,-ENV.planeSize*2) 
+        that._scene.add(dLight1)
+        that._lights.push(dLight1);
 
-        var dLight2 = new THREE.DirectionalLight(ENV.white, 1)
-        dLight2.position.set(0,1,5) // one above behind camera
+        //Sun shadow
+        var dLight2 = new THREE.SpotLight(ENV.sunColor, 3)
+        dLight2.position.set(-90 + that.player.position.x,
+                             10 + that.player.position.y,
+                            -ENV.planeSize*.02 + that.player.position.z)
+        dLight2.onlyShadow = true;
+        dLight2.castShadow = true;
         that._scene.add(dLight2)
-        //that._lights.push(dLight2)
+        that._lights.push(dLight2);
+        that.sunShadow = dLight2;
 
-        var spotLight;
-        for (var i = 0; i < 4; i++) {
-            spotLight = new THREE.SpotLight(ENV.white, 1, 10000);
-            spotLight.position.set(100*(i%2-.5), 10, -300*i);
-            spotLight.castShadow = true;
-            spotLight.shadowDarkness = 0.5;
-            that._scene.add(spotLight);
-            that._lights.push(spotLight);
-        }
-        console.log(that._lights.length);
+        var aLight = new THREE.AmbientLight(0x9E946C);
+        that._scene.add(aLight);
+        that._lights.push(aLight)
+
+        // var spotLight;
+        // for (var i = 0; i < 4; i++) {
+        //     spotLight = new THREE.SpotLight(ENV.white, 1, 10000);
+        //     spotLight.position.set(100*(i%2-.5), 10, -300*i);
+        //     spotLight.castShadow = true;
+        //     spotLight.shadowDarkness = 0.5;
+        //     that._scene.add(spotLight);
+        //     that._lights.push(spotLight);
+        // }
+        // console.log(that._lights.length);
     }
 
     // Tball texture -> http://tpreclik.dd-dns.de/codeblog/wp-content/uploads/2007/02/tennisball-texture.jpg
@@ -150,6 +162,7 @@ var World = function(spec) {
         })
     }
 
+   
     // P is player
     that._catchOthers = function(p) {
         var r = p.geometry.parameters.radius;
@@ -183,6 +196,14 @@ var World = function(spec) {
         }
     }
 
+    that._adjustSunshadow = function() {
+        var s = that.sunShadow;
+        s.target = that.player;
+        s.position.x = that.player.position.x + ENV.sunShadowOffset.x;
+        s.position.y = that.player.position.y + ENV.sunShadowOffset.y;
+        s.position.z = that.player.position.z + ENV.sunShadowOffset.z;
+    }
+
 /***************** END PRIVATE METHODS  **************/
 
 
@@ -210,10 +231,41 @@ var World = function(spec) {
 
         that._adjustCamera()
 
-        for(var i = 0; i < that._lights.length; i++) {
-            that._lights[i].target = that.player
-        }
+        that._adjustSunshadow();
+
     }
+
+    // https://upload.wikimedia.org/wikipedia/commons/2/2d/Pyramid_Lake_Panorama.jpg
+    // https://stackoverflow.com/questions/19865537/three-js-set-background-image
+    that.initBackground = function() {
+
+        var background = {}
+        background.scene = new THREE.Scene();
+        background.camera = new THREE.PerspectiveCamera();
+
+
+        var geo = new THREE.PlaneBufferGeometry(ENV.bgSize*1.5, ENV.bgSize, 1, 1)
+        var texture = new THREE.ImageUtils.loadTexture("images/background.jpg", THREE.UVMapping);
+        var material = new THREE.MeshBasicMaterial( {
+            map:texture
+        })
+
+        material.depthTest = false;
+        material.depthWrite = false;
+
+        var mesh = new THREE.Mesh(geo, material);
+
+        background.scene.add(background.camera);
+        background.scene.add(mesh);
+
+        mesh.position.y = 80
+        mesh.position.z = -ENV.bgDist
+        //mesh.rotation.x += Math.PI/10
+
+        that._background = mesh;
+        return background;
+    }
+
 
 
     that.init = function(scene, camera) {
@@ -223,13 +275,12 @@ var World = function(spec) {
 
         // Create Environment
         that._initFloor();
-        that._initLights();
         that._initPlayer();
+        that._initLights();
         that._initKeyboard();
-        //that._initOtherSphere();
+        
         that._initGroupsOfSpheres(10);
         that._initTree();
-
     }
 
     return that;

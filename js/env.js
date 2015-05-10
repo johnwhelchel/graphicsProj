@@ -10,10 +10,17 @@
 // Get rid of camera movement. 
     // FIXED
 
+// Make it pretty
+    // Sub goals:
+        // Pretty background image
+        // Sunlight
+        // Grass
+
+
+
+// have it fall off the edge
 // Make it possible to pick up via children, i.e. nesting.
 // Have a lot more
-// Make it pretty
-// have it fall off the edge
 
 var ENV = {
 
@@ -42,12 +49,17 @@ var ENV = {
 
     nonPlayerMass: 500,
     nonPlayerRadius: .2,
-    nonPlayerCastShadow: false,
+    nonPlayerCastShadow: true,
     captureMass: 10,
 
     // Floor variables
     planeSize: 2000,
-    planeColor: 0x0000ee,
+    bgSize: 200,
+    bgDist: 200,
+    planeColor: 0x115511,
+
+    // Lights
+    sunShadowOffset: new THREE.Vector3(-90, 10, -100),
 
     // Useful Constants
     down: new THREE.Vector3(0, -1, 0),
@@ -61,7 +73,7 @@ var ENV = {
     upKey: 38,
     downKey: 40,
 
-    white: 0xffffff,
+    sunColor: 0xFCFCAE,
     defaultMass: 100,
 
 }
